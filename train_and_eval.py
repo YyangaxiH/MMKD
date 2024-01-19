@@ -359,8 +359,7 @@ def run_transductive(
             )
 
             print(
-                "epoch{:3d} | loss: {:.4f}| loss_test:{:.4f} | score_train:{:.4f} | score_val:{:.4f}| score_test:{:.4f}"
-                    .format(epoch, loss, loss_test, score_train, score_val, score_test))
+                "score_test:{:.4f}".format(score_test))
 
             loss_and_score += [
                 [
