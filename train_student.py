@@ -23,13 +23,6 @@ from train_and_eval import distill_run_transductive, distill_run_inductive, get_
 import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
 
-
-# get_args()函数：用于解析命令行参数并返回一个包含参数的命名空间对象
-# 命令行参数通常由两部分组成：选项（Options）和参数值（Arguments）。
-#       选项通常以单个短划线（-）或双短划线（--）开头，后面跟着选项的名称。参数值是选项所需的值，用于提供更具体的信息。
-#       例："python program.py --input data.txt":--input 是一个选项，表示输入文件的路径，后面的 data.txt 是对应的参数值
-
-
 def get_args():
     parser = argparse.ArgumentParser(description="PyTorch DGL implementation")
     parser.add_argument("--device", type=int, default=0, help="CUDA device, -1 means CPU")
@@ -65,20 +58,21 @@ def get_args():
         action="store_true",
         help="Set to True to save the loss curves, trained model, and min-cut loss for the transductive setting",
     )
-    """生成对抗扰动"""
+
     parser.add_argument("--PRL", type=bool, default=True, help="Set to True to include Perturbation Robustness Loss", )
-    parser.add_argument("--gamma", type=float, default=0.02, help="加噪声计算的adv_loss 所占的比值", )
-    parser.add_argument("--CE_adv", type=bool, default=True, help="与真实标签计算交叉熵时是否加噪声", )
-    parser.add_argument("--KD_adv", type=bool, default=True, help="蒸馏logits时是否加噪声", )
-    parser.add_argument("--KD_hid_adv", type=bool, default=False, help="蒸馏中间hidden时是否加噪声", )
-    parser.add_argument("--adv_iters", type=float, default=5, help="迭代次数", )
-    parser.add_argument("--adv_eps", type=float, default=0.01, help="对抗性扰动的幅度", )
+    parser.add_argument("--gamma", type=float, default=0.02, help="ERL weight", )
+    parser.add_argument("--CE_adv", type=bool, default=True, help="CE weight", )
+    parser.add_argument("--KD_adv", type=bool, default=True, help="Whether the noise data distillation characteristics", )
+    parser.add_argument("--KD_hid_adv", type=bool, default=False, help="Whether the noise data distillation logits", )
+    parser.add_argument("--adv_iters", type=float, default=5, help="The number of iterations", )
+    parser.add_argument("--adv_eps", type=float, default=0.01, help="Noise range", )
 
     """Distall"""
-    parser.add_argument("--lamb", type=float, default=0, help="参数平衡硬标签和教师输出的损耗，取 [0，1] 中的值", )
-    parser.add_argument("--alpha", type=float, default=0.4, help="蒸馏中间层的占比，取 [0，1] 中的值", )
-    parser.add_argument("--T_t", type=int, default=1, help="与教师模型最后一层蒸馏的温度T_t", )
-    parser.add_argument("--T_h", type=int, default=1, help="与教师模型中间层hidden 蒸馏的温度T_h", )
+    parser.add_argument("--lamb", type=float, default=0, help="Parameters balance hard label and teacher output losses
+, [0，1]", )
+    parser.add_argument("--alpha", type=float, default=0.4, help="Parameters balance hard label and teacher output losses,  [0，1]", )
+    parser.add_argument("--T_t", type=int, default=1, help="logits distillation temperature", )
+    parser.add_argument("--T_h", type=int, default=1, help="hidden layers distillation temperature", )
     parser.add_argument("--out_t_path", type=str, default="outputs", help="Path to load teacher outputs")
 
     """Dataset"""
@@ -117,15 +111,14 @@ def get_args():
 
     """SAGE Specific"""
     parser.add_argument("--batch_size", type=int, default=512)
-    parser.add_argument("--fan_out", type=str, default="5,5", help="SAGE 中每层的样本数长度 = num_layers", )
+    parser.add_argument("--fan_out", type=str, default="5,5", help="", )
     parser.add_argument("--num_workers", type=int, default=0, help="Number of workers for sampler")
 
     """Optimization"""
     parser.add_argument("--learning_rate", type=float, default=0.01)
     parser.add_argument("--weight_decay", type=float, default=0.0005)
     parser.add_argument("--max_epoch", type=int, default=500, help="Evaluate once per how many epochs")
-    parser.add_argument("--patience", type=int, default=30, help="验证集的分数在多少个时期内没有提高时提前停止")  # 之前是50
-
+    parser.add_argument("--patience", type=int, default=30, help="patience") 
     """Ablation"""
     parser.add_argument(
         "--feature_noise",
@@ -154,8 +147,6 @@ def get_args():
     args = parser.parse_args()
     return args
 
-
-# run(args)函数：用于加载数据、初始化模型、运行训练和评估，并返回评估结果
 def run(args):
     """
     Returns:
@@ -260,35 +251,24 @@ def run(args):
             args.model_config_path, args.student, args.dataset
         )  # Note: student config
     conf = dict(args.__dict__, **conf)  # 将args.__dict__和conf字典中的内容合并到一个新的字典conf中
-    print("这是参数字典conf:", conf)
     conf["device"] = device
     logger.info(f"conf: {conf}")
 
-    """生成扰动数据"""
-    model_int = Model(conf)  # 保存原初始化模型参数
+    model_int = Model(conf) 
     adv_feats, out_t_hidden_adv_all, out_t_adv_all = 0, 0, 0
     if conf["PRL"]:
-        # （2）通过PGD生成扰动
         conf1 = copy.deepcopy(conf)
         model1 = Model(conf1)
-        adv_deltas = get_PGD_inputs(model1, feats.to(device), labels.to(device), torch.nn.NLLLoss(), conf1["adv_iters"], conf1["adv_eps"], conf1["seed"])
+        adv_deltas = generate_noise(model1, feats.to(device), labels.to(device), torch.nn.NLLLoss(), conf1["adv_iters"], conf1["adv_eps"], conf1["seed"])
         adv_feats = torch.add(feats.to(device), adv_deltas)
 
-        # （2）提取训练好的教师模型
         conf_t = conf
         conf_t["model_name"] = "SAGE"
         conf_t["dropout_ratio"] = 0
         teacher_model = Model(conf_t)
         teacher_model.load_state_dict(torch.load(out_t_dir.joinpath("model.pth")))
-        # print("教师模型：", teacher_model)
-        # （3）得到教师模型针对扰动的输出
         out_t_hidden_adv_all, out_t_adv_all = advdata_hidden_out(conf_t, g, teacher_model, adv_feats)
 
-        # 验证两个模型参数是否相同
-        # if are_models_equal(model1, model_int):
-        #     print("模型参数相同")
-        # else:
-        #     print("模型参数不同")
 
     """ Model init """
     # model = Model(conf)
@@ -417,13 +397,9 @@ def run(args):
         min_cut = compute_min_cut_loss(g, out)
         with open(output_dir.parent.joinpath("min_cut_loss"), "a+") as f:
             f.write(f"{min_cut :.4f}\n")
-    # visualize(out, labels)
-    # visualize(out_t, color=labels)
 
     return score_lst, conf
 
-
-# repeat_run(args)函数：用于多次运行run(args)函数，并返回平均结果和标准差
 def repeat_run(args):
     scores = []
     for seed in range(args.num_exp):
@@ -433,7 +409,6 @@ def repeat_run(args):
     return scores_np.mean(axis=0), scores_np.std(axis=0)
 
 
-# main()函数：用于获取命令行参数，运行run(args)或repeat_run(args)函数，并将结果写入文件
 def main():
     global score_str, conf
     args = get_args()
@@ -456,7 +431,6 @@ def main():
                 f"PRL={args.PRL}、CE_adv={args.CE_adv}、KD_adv={args.KD_adv}、KD_hid_adv={args.KD_hid_adv}]\n")
 
     # for collecting aggregated results
-    print(score_str)
 
 
 if __name__ == "__main__":
