@@ -59,7 +59,7 @@ def get_args():
     """Dataset"""
     # CPF_data =["cora", "citeseer", "pubmed", "a-computer", "a-photo"]
     # OGB_data = ["ogbn-arxiv", "ogbn-products"]
-    parser.add_argument("--dataset", type=str, default="cora", help="Dataset")  # 指定数据集
+    parser.add_argument("--dataset", type=str, default="cora", help="Dataset")  
     parser.add_argument("--data_path", type=str, default="./data", help="Path to data")
     parser.add_argument(
         "--labelrate_train",
@@ -87,7 +87,7 @@ def get_args():
         default="./train.conf.yaml",
         help="Path to model configeration",
     )
-    parser.add_argument("--teacher", type=str, default="SAGE", help="Teacher model")  # 指定教师模型
+    parser.add_argument("--teacher", type=str, default="SAGE", help="Teacher model")  
     parser.add_argument(
         "--num_layers", type=int, default=2, help="Model number of layers"
     )
@@ -291,7 +291,6 @@ def run(args):
             logger,
             loss_and_score,
         )
-        # print("这是ind下 out_logits_hidden:", out_logits_hidden)
         score_lst = [score_test_tran, score_test_ind]
 
     logger.info(
@@ -301,20 +300,15 @@ def run(args):
 
     """ Saving model """
     if args.save_results:
-        # 保存教师模型权重Model
         torch.save(model.state_dict(), output_dir.joinpath("model.pth"))
-        print("教师模型权重保存完毕！")
 
     """ Saving teacher outputs """
     out_np = out.detach().cpu().numpy()
     np.savez(output_dir.joinpath("out"), out_np)
 
-    """ 将教师模型经过一层GCN后的logits保存下来 """
-    # print("在这儿把教师模型hidden层结果保存下来：")
     out_hidden_np = out_logits_hidden.detach().cpu().numpy()
-    # print("中间层logit:sout_hidden_np：\n", out_hidden_np)
     np.savez(output_dir.joinpath("out_hidden"), out_hidden_np)
-    # print("中间层logit保存完毕！")
+ 
 
     """ Saving min-cut loss """
     if args.exp_setting == "tran" and args.compute_min_cut:
@@ -350,7 +344,6 @@ def main():
     with open(args.output_dir.parent.joinpath("exp_results"), "a+") as f:
         f.write(f"{score_str}\n")
 
-    # for collecting aggregated results
     print(score_str)
 
 
