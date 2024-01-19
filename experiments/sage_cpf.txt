@@ -1,0 +1,4 @@
+  tran
+      cora	  citeseer	    pubmed	a-computer	   a-photo	
+   ind
+      cora	  citeseer	    pubmed	a-computer	   a-photo	
