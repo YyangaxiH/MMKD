@@ -577,9 +577,7 @@ def run_inductive(
             )
 
             print(
-                "epoch{:3d} | loss_test_tran:{:.4f} | loss_test_ind:{:.4f} | score_train:{:.4f} | score_val:{:.4f}| score_test_tran:{:.4f} | score_test_ind:{:.4f}"
-                    .format(epoch, loss_test_tran, loss_test_ind, score_train, score_val, score_test_tran,
-                            score_test_ind))
+                "score_test_tran:{:.4f} | score_test_ind:{:.4f}".format(score_test_tran, score_test_ind))
 
             loss_and_score += [
                 [
@@ -667,15 +665,14 @@ def distill_run_transductive(
     The input graph is assumed to be large, and MLP is assumed to be the student model. Thus, node feature only and mini-batch is used.
 
     out_t: Soft labels produced by the teacher model.
-    out_t_hidden: 教师模型倒数第二层 的logits
     criterion_l & criterion_t: Loss used for hard labels (`labels`) and soft labels (`out_t & ut_t_hidden`) respectively
     loss_and_score: Stores losses and scores.
     """
     seed = conf["seed"]
     device = conf["device"]
     batch_size = conf["batch_size"]
-    lamb = conf["lamb"]  # lamb: weight parameter lambda
-    alpha = conf["alpha"]  # hidden隐藏层蒸馏的比重
+    lamb = conf["lamb"]  
+    alpha = conf["alpha"] 
     T_t = conf["T_t"]
     T_h = conf["T_h"]
     PRL = conf["PRL"]
@@ -905,8 +902,7 @@ def distill_run_inductive(
                 f"Ep {epoch:3d} | l: {loss:.4f} | s_l: {score_l:.4f} | s_val: {score_val:.4f} | s_tt: {score_test_tran:.4f} | s_ti: {score_test_ind:.4f}"
             )
             print(
-                "epoch{:3d} | loss: {:.4f}| hard_loss: {:.4f}| loss_t: {:.4f}| score_l: {:.4f}| score_val: {:.4f}| score_test_tran:{:.4f}| score_test_ind:{:.4f}"
-                    .format(epoch, loss, hard_loss, loss_t, score_l, score_val, score_test_tran, score_test_ind))
+                "score_test_tran:{:.4f}| score_test_ind:{:.4f}".format(score_test_tran, score_test_ind))
             loss_and_score += [
                 [
                     epoch,
