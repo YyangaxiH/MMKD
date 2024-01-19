@@ -19,7 +19,6 @@ cora:
     weight_decay: 0.005
     dropout_ratio: 0.6
     adv_eps: 0.02
-#    T_h: 0.5
     
   GAT:
     dropout_ratio: 0.6
