@@ -59,7 +59,8 @@ def get_args():
         help="Set to True to save the loss curves, trained model, and min-cut loss for the transductive setting",
     )
 
-    parser.add_argument("--PRL", type=bool, default=True, help="Set to True to include Perturbation Robustness Loss", )
+    """Noisy data"""
+    parser.add_argument("--PRL", type=bool, default=True, help="Set to True to include Elastic Robustness Loss", )
     parser.add_argument("--gamma", type=float, default=0.02, help="ERL weight", )
     parser.add_argument("--CE_adv", type=bool, default=True, help="CE weight", )
     parser.add_argument("--KD_adv", type=bool, default=True, help="Whether the noise data distillation characteristics", )
