@@ -179,8 +179,6 @@ def evaluate(model, data, feats, labels, criterion, evaluator, idx_eval=None):
     model.eval()
     with torch.no_grad():
         out_logits_hidden, out = model.inference(data, feats)
-        # out_logits_hidden = out_logits_hidden.log_softmax(dim=1)
-        # out = out.log_softmax(dim=1)
         if idx_eval is None:
             loss = criterion(out, labels)
             score = evaluator(out, labels)
